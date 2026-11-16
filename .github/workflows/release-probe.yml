@@ -1,0 +1,22 @@
+name: release probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create and delete a throwaway release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo hello > probe.txt
+          gh release create "probe-${GITHUB_RUN_ID}" probe.txt --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title probe --generate-notes --latest
+          gh release delete "probe-${GITHUB_RUN_ID}" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
