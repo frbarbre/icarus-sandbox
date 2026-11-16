@@ -2,6 +2,10 @@ name: release probe
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,12 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
     steps:
-      - name: Create and delete a throwaway release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Old way (existing tag plus --target)
+        continue-on-error: true
+        run: |
+          echo hello > probe.txt
+          gh release create "$TAG" probe.txt --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title old --generate-notes --latest
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
+      - name: New way (existing tag, --verify-tag)
         run: |
           set -euo pipefail
           echo hello > probe.txt
-          gh release create "probe-${GITHUB_RUN_ID}" probe.txt --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title probe --generate-notes --latest
-          gh release delete "probe-${GITHUB_RUN_ID}" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+          gh release create "$TAG" probe.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title new --generate-notes --latest
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
